@@ -394,11 +394,13 @@ WNDPROC pListProc;
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 
+
 int
-WinMain(
+WINAPI
+wWinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPSTR lpCmdLine,
+	_In_ LPWSTR lpCmdLine,
 	_In_ int nShowCmd
 )
 {
@@ -418,10 +420,10 @@ WinMain(
 	wndclass.lpszMenuName = NULL;
 	wndclass.lpszClassName = szAppName;
 
-	if (!RegisterClass(&wndclass))
+	if (!RegisterClassW(&wndclass))
 		return 0;
 
-	hwnd = CreateWindow(szAppName, szAppName,
+	hwnd = CreateWindowW(szAppName, szAppName,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL, NULL, hInstance, NULL);
@@ -429,10 +431,10 @@ WinMain(
 	ShowWindow(hwnd, SW_SHOWMAXIMIZED);
 	UpdateWindow(hwnd);
 
-	while (GetMessage(&msg, NULL, 0, 0))
+	while (GetMessageW(&msg, NULL, 0, 0))
 	{
 		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		DispatchMessageW(&msg);
 	}
 	return (int)msg.wParam;
 }
@@ -443,7 +445,7 @@ LRESULT ListProc(HWND hwnd2, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (message == WM_LBUTTONUP)
 	{
-		index = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0);
+		index = (int)SendMessageW(hwndList, LB_GETCURSEL, 0, 0);
 		Instrument = index;
 		midiOutShortMsg(hMidiOut, 0x0C0 | (Instrument << 8));
 		DestroyWindow(hwndList);
@@ -459,7 +461,7 @@ LRESULT ListProc(HWND hwnd2, UINT message, WPARAM wParam, LPARAM lParam)
 			DestroyWindow(hwndList);
 		}
 		else if (wParam == VK_RETURN) {
-			index = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0);
+			index = (int)SendMessageW(hwndList, LB_GETCURSEL, 0, 0);
 			if (index < 128) {
 				DestroyWindow(hwndList);
 				Instrument = index;
@@ -470,7 +472,7 @@ LRESULT ListProc(HWND hwnd2, UINT message, WPARAM wParam, LPARAM lParam)
 	else if (message == WM_DESTROY)
 		showinginstruments = FALSE;
 
-	return CallWindowProc(pListProc, hwnd2, message, wParam, lParam);
+	return CallWindowProcW(pListProc, hwnd2, message, wParam, lParam);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -478,8 +480,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CREATE:
-		if (0 == AddFontResource(L"MAESTRO_.TTF"))
-			MessageBox(hwnd, L"Couldn't load the MAESTRO_.TTF font!\nMake sure it's in the Simple Piano folder,\nor the folder that Windows7 moves data files to.", ERROR, MB_OK);
+		if (0 == AddFontResourceW(L"MAESTRO_.TTF"))
+			MessageBoxW(hwnd, L"Couldn't load the MAESTRO_.TTF font!\nMake sure it's in the Simple Piano folder,\nor the folder that Windows7 moves data files to.", ERROR, MB_OK);
 		GetLocalTime(&st);
 		SystemTimeToFileTime(&st, &ft);
 		ul.LowPart = ft.dwLowDateTime;
@@ -488,7 +490,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		srand(ul.LowPart);
 
 		hwndKeys[0] = hwndChords[0] = NULL;
-		hFile = CreateFile(SimplePianoIni, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+		hFile = CreateFileW(SimplePianoIni, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 		if (hFile != INVALID_HANDLE_VALUE)
 		{
 			fileSize = GetFileSize(hFile, NULL);
@@ -524,53 +526,53 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		hMenu = CreateMenu();
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING, IDM_EXIT, L"&Exit");
+		AppendMenuW(hMenu, MF_STRING, IDM_EXIT, L"&Exit");
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING, IDM_INSTRUMENT, L"&Instrument");
+		AppendMenuW(hMenu, MF_STRING, IDM_INSTRUMENT, L"&Instrument");
 		iNumDevs = midiOutGetNumDevs();
 		z = midiInGetNumDevs();
 		if (z) {
-			AppendMenu(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"Input &Device");
+			AppendMenuW(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"Input &Device");
 			for (x = 0; x < z; x++) {
-				if (MMSYSERR_NOERROR == midiInGetDevCaps(x, &mic, sizeof(mic)))
-					AppendMenu(hMenuPopup, MF_STRING, IDM_INPUT + x, mic.szPname);
+				if (MMSYSERR_NOERROR == midiInGetDevCapsW(x, &mic, sizeof(mic)))
+					AppendMenuW(hMenuPopup, MF_STRING, IDM_INPUT + x, mic.szPname);
 			}
 			CheckMenuItem(hMenuPopup, IDM_INPUT + iInDevice, MF_CHECKED);
 		}
 		hMenuPopup = CreateMenu();
-		if (MMSYSERR_NOERROR == midiOutGetDevCaps(MIDIMAPPER, &moc, sizeof(moc)))//Microsoft MIDI Mapper
+		if (MMSYSERR_NOERROR == midiOutGetDevCapsW(MIDIMAPPER, &moc, sizeof(moc)))//Microsoft MIDI Mapper
 		{
-			AppendMenu(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"&Output Device");
-			AppendMenu(hMenuPopup, MF_STRING, IDM_DEVICE + (int)MIDIMAPPER, moc.szPname);
+			AppendMenuW(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"&Output Device");
+			AppendMenuW(hMenuPopup, MF_STRING, IDM_DEVICE + (int)MIDIMAPPER, moc.szPname);
 			for (x = 0; x < iNumDevs; x++)
 			{
-				midiOutGetDevCaps(x, &moc, sizeof(moc));
-				AppendMenu(hMenuPopup, MF_STRING, IDM_DEVICE + x, moc.szPname);
+				midiOutGetDevCapsW(x, &moc, sizeof(moc));
+				AppendMenuW(hMenuPopup, MF_STRING, IDM_DEVICE + x, moc.szPname);
 			}
 			CheckMenuItem(hMenuPopup, IDM_DEVICE + iOutDevice, MF_CHECKED);
 		}
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"Default Key &Volume");
+		AppendMenuW(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"Default Key &Volume");
 		for (x = 0; x < 8; x++)
 		{
 			AppendMenu(hMenuPopup, MF_STRING, IDM_VELOCITY + x, VelocityChoice[x]);
 		}
 		CheckMenuItem(hMenuPopup, 8 - ((DefaultVelocity + 1) / 16) + IDM_VELOCITY, MF_CHECKED);
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"&Accidental");
-		AppendMenu(hMenuPopup, MF_STRING, IDM_ACCIDENTAL + 1, L"#");
-		AppendMenu(hMenuPopup, MF_STRING, IDM_ACCIDENTAL + 2, L"b");
+		AppendMenuW(hMenu, MF_STRING | MF_POPUP, (LONG_PTR)hMenuPopup, L"&Accidental");
+		AppendMenuW(hMenuPopup, MF_STRING, IDM_ACCIDENTAL + 1, L"#");
+		AppendMenuW(hMenuPopup, MF_STRING, IDM_ACCIDENTAL + 2, L"b");
 		CheckMenuItem(hMenuPopup, IDM_ACCIDENTAL + 1, MF_CHECKED);
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING, IDM_KEYS, ShowKeys);
+		AppendMenuW(hMenu, MF_STRING, IDM_KEYS, ShowKeys);
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING, IDM_CHORDS, ShowChords);
+		AppendMenuW(hMenu, MF_STRING, IDM_CHORDS, ShowChords);
 		hMenuPopup = CreateMenu();
-		AppendMenu(hMenu, MF_STRING, IDM_TEST, PlayNote);
+		AppendMenuW(hMenu, MF_STRING, IDM_TEST, PlayNote);
 		hMenuPopup = CreateMenu();
 		//		AppendMenu(hMenu, MF_STRING, IDM_UNSTICK, L"&Unstick Notes");
 		//		SetMenu(hwnd, hMenu);
-		AppendMenu(hMenu, MF_STRING, IDM_ABOUT, L"&About");
+		AppendMenuW(hMenu, MF_STRING, IDM_ABOUT, L"&About");
 		SetMenu(hwnd, hMenu);
 
 		if (MMSYSERR_NOERROR == midiOutOpen(&hMidiOut, iOutDevice, 0, 0, 0)) {
@@ -597,7 +599,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		for (x = 0; Arial[x] != 0; x++)
 			lf.lfFaceName[x] = Arial[x];
 		lf.lfFaceName[x] = 0;
-		hFont = CreateFontIndirect(&lf);
+		hFont = CreateFontIndirectW(&lf);
 
 		lf1.lfHeight = -13;
 		lf1.lfWeight = 400;
@@ -612,7 +614,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		for (x = 0; Arial[x] != 0; x++)
 			lf1.lfFaceName[x] = Arial[x];
 		lf1.lfFaceName[x] = 0;
-		hSmallFont = CreateFontIndirect(&lf1);
+		hSmallFont = CreateFontIndirectW(&lf1);
 
 		lf2.lfHeight = -48;
 		lf2.lfWeight = 400;
@@ -627,7 +629,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		for (x = 0; Maestro[x] != 0; x++)
 			lf2.lfFaceName[x] = Maestro[x];
 		lf2.lfFaceName[x] = 0;
-		hMaestroFont = CreateFontIndirect(&lf2);
+		hMaestroFont = CreateFontIndirectW(&lf2);
 
 		hPen = CreatePen(PS_SOLID, 2, 0x808080);
 		hWhiteBrush = CreateSolidBrush(0xFFFFFF);
@@ -719,13 +721,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			for (x = 0, z = top260 - 270; x < 12; x++)
 			{
-				hwndKeys[x] = CreateWindow(L"BUTTON", Keys[x],
+				hwndKeys[x] = CreateWindowW(L"BUTTON", Keys[x],
 					WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 					xKeyLoc[x], yKeyLoc[x], 50, 30,
 					hwnd, NULL, hInst, NULL);
 			}
 			DestroyWindow(hwndShowScale);
-			hwndShowScale = CreateWindow(L"BUTTON", L"Show Scale",
+			hwndShowScale = CreateWindowW(L"BUTTON", L"Show Scale",
 				WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 				top260min30 - (top260min30 / 2) - 35, top260min30 - (top260min30 / 2), 120, 30,
 				hwnd, NULL, hInst, NULL);
@@ -739,33 +741,33 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			for (x = 0, z = 0; x < 9; x++, z += 30)
 			{
-				hwndChords[x] = CreateWindow(L"BUTTON", Chords[x],
+				hwndChords[x] = CreateWindowW(L"BUTTON", Chords[x],
 					WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 					top260min30 + 50, z, 135, 30,
 					hwnd, NULL, hInst, NULL);
 			}
-			SendMessage(hwndChords[ChordType], BM_SETCHECK, BST_CHECKED, 0);
+			SendMessageW(hwndChords[ChordType], BM_SETCHECK, BST_CHECKED, 0);
 			for (x = 0; x < 4; x++)
 				DestroyWindow(hwndInversions[x]);
 			for (x = 0, z = 30; x < 3; x++, z += 30)
 			{
-				hwndInversions[x] = CreateWindow(L"BUTTON", Inversions[x],
+				hwndInversions[x] = CreateWindowW(L"BUTTON", Inversions[x],
 					WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 					top260min30 + 50 + 135, z, 120, 30,
 					hwnd, NULL, hInst, NULL);
 			}
-			hwndInversions[3] = CreateWindow(L"BUTTON", Inversions[3],
+			hwndInversions[3] = CreateWindowW(L"BUTTON", Inversions[3],
 				WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 				top260min30 + 50 + 135, 150, 120, 30,
 				hwnd, NULL, hInst, NULL);
-			SendMessage(hwndInversions[Inversion], BM_SETCHECK, BST_CHECKED, 0);
+			SendMessageW(hwndInversions[Inversion], BM_SETCHECK, BST_CHECKED, 0);
 		}
 
 		if (showtest)
 		{
-			SendMessage(hwnd, WM_COMMAND, IDM_ACCIDENTAL + saveAccidental, 0);
+			SendMessageW(hwnd, WM_COMMAND, IDM_ACCIDENTAL + saveAccidental, 0);
 			showtest = FALSE;
-			ModifyMenu(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, PlayNote);
+			ModifyMenuW(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, PlayNote);
 			DrawMenuBar(hwnd);
 		}
 		WhiteKeyWidth = rect.right / 35;//5 octaves = 60 keys = 35 white keys
@@ -780,8 +782,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (showtest)
 			{
 				showtest = FALSE;
-				SendMessage(hwnd, WM_COMMAND, IDM_ACCIDENTAL + saveAccidental, 0);
-				ModifyMenu(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, PlayNote);
+				SendMessageW(hwnd, WM_COMMAND, IDM_ACCIDENTAL + saveAccidental, 0);
+				ModifyMenuW(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, PlayNote);
 				DrawMenuBar(hwnd);
 			}
 			for (x = 0; x < 40; x++)
@@ -806,16 +808,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				showinginstruments = TRUE;
 				InvalidateRect(hwnd, &rect, FALSE);
-				hwndList = CreateWindow(L"LISTBOX", L"Instruments",
+				hwndList = CreateWindowW(L"LISTBOX", L"Instruments",
 					WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_VSCROLL,// | LBS_NOTIFY,
 					0, TitleAndMenu, 240, rect.bottom,
 					hwnd, NULL, hInst, NULL);
 				pListProc = (WNDPROC)SetWindowLongPtr(hwndList, GWLP_WNDPROC, (LONG_PTR)ListProc);
 				for (x = 0; x < 128; x++)
-					SendMessage(hwndList, LB_ADDSTRING, 0, Instruments[x]);
-				//SendMessage(hwndList, LB_ADDSTRING, 0, *(DWORD*)&Instruments[x]);
+					SendMessageW(hwndList, LB_ADDSTRING, 0, Instruments[x]);
+				//SendMessageW(hwndList, LB_ADDSTRING, 0, *(DWORD*)&Instruments[x]);
 				index = Instrument;
-				SendMessage(hwndList, LB_SETCURSEL, index, 0);
+				SendMessageW(hwndList, LB_SETCURSEL, index, 0);
 				SetFocus(hwndList);
 			}
 		}
@@ -868,7 +870,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				else//if (accidental == 2)
 					*(WORD*)&Keys[6][0] = 'bG';
 				DestroyWindow(hwndKeys[6]);
-				hwndKeys[6] = CreateWindow(L"BUTTON", Keys[6],
+				hwndKeys[6] = CreateWindowW(L"BUTTON", Keys[6],
 					WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON | WS_DLGFRAME,
 					xKeyLoc[6], yKeyLoc[6], 50, 30,
 					hwnd, NULL, hInst, NULL);
@@ -882,7 +884,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (showkeys == FALSE)
 			{
 				showkeys = TRUE;
-				ModifyMenu(hMenu, IDM_KEYS, MF_BYCOMMAND | MF_STRING, IDM_KEYS, HideKeys);
+				ModifyMenuW(hMenu, IDM_KEYS, MF_BYCOMMAND | MF_STRING, IDM_KEYS, HideKeys);
 				DrawMenuBar(hwnd);
 				if (accidental == 1)
 					*(WORD*)&Keys[6][0] = '#F';
@@ -890,24 +892,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					*(WORD*)&Keys[6][0] = 'bG';
 				for (x = 0, z = top260 - 270; x < 12; x++)
 				{
-					hwndKeys[x] = CreateWindow(L"BUTTON", Keys[x],
+					hwndKeys[x] = CreateWindowW(L"BUTTON", Keys[x],
 						WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 						xKeyLoc[x], yKeyLoc[x], 50, 30,
 						hwnd, NULL, hInst, NULL);
 				}
-				SendMessage(hwndKeys[KeyName], BM_SETCHECK, BST_CHECKED, 0);
-				hwndShowScale = CreateWindow(L"BUTTON", L"Show Scale",
+				SendMessageW(hwndKeys[KeyName], BM_SETCHECK, BST_CHECKED, 0);
+				hwndShowScale = CreateWindowW(L"BUTTON", L"Show Scale",
 					WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 					top260min30 - (top260min30 / 2) - 35, top260min30 - (top260min30 / 2), 120, 30,
 					hwnd, NULL, hInst, NULL);
-				SendMessage(hwndShowScale, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendMessageW(hwndShowScale, BM_SETCHECK, BST_UNCHECKED, 0);
 			}
 			else
 			{
 				showkeys = FALSE;
 				showscale = FALSE;
 				ChordType = 0;
-				ModifyMenu(hMenu, IDM_KEYS, MF_BYCOMMAND | MF_STRING, IDM_KEYS, ShowKeys);
+				ModifyMenuW(hMenu, IDM_KEYS, MF_BYCOMMAND | MF_STRING, IDM_KEYS, ShowKeys);
 				DrawMenuBar(hwnd);
 				for (x = 0; x < 12; x++)
 				{
@@ -926,33 +928,33 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (showchords == FALSE)
 			{
 				showchords = TRUE;
-				ModifyMenu(hMenu, IDM_CHORDS, MF_BYCOMMAND | MF_STRING, IDM_CHORDS, HideChords);
+				ModifyMenuW(hMenu, IDM_CHORDS, MF_BYCOMMAND | MF_STRING, IDM_CHORDS, HideChords);
 				DrawMenuBar(hwnd);
 				for (x = 0, z = 0; x < 9; x++, z += 30)
 				{
-					hwndChords[x] = CreateWindow(L"BUTTON", Chords[x],
+					hwndChords[x] = CreateWindowW(L"BUTTON", Chords[x],
 						WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 						top260min30 + 50, z, 135, 30,
 						hwnd, NULL, hInst, NULL);
 				}
-				SendMessage(hwndChords[ChordType], BM_SETCHECK, BST_CHECKED, 0);
+				SendMessageW(hwndChords[ChordType], BM_SETCHECK, BST_CHECKED, 0);
 				for (x = 0, z = 30; x < 3; x++, z += 30)
 				{
-					hwndInversions[x] = CreateWindow(L"BUTTON", Inversions[x],
+					hwndInversions[x] = CreateWindowW(L"BUTTON", Inversions[x],
 						WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 						top260min30 + 50 + 135, z, 120, 30,
 						hwnd, NULL, hInst, NULL);
 				}
-				hwndInversions[3] = CreateWindow(L"BUTTON", Inversions[3],
+				hwndInversions[3] = CreateWindowW(L"BUTTON", Inversions[3],
 					WS_CHILD | WS_VISIBLE | BS_RADIOBUTTON | WS_DLGFRAME,
 					top260min30 + 50 + 135, 150, 120, 30,
 					hwnd, NULL, hInst, NULL);
-				SendMessage(hwndInversions[Inversion], BM_SETCHECK, BST_CHECKED, 0);
+				SendMessageW(hwndInversions[Inversion], BM_SETCHECK, BST_CHECKED, 0);
 			}
 			else
 			{
 				showchords = FALSE;
-				ModifyMenu(hMenu, IDM_CHORDS, MF_BYCOMMAND | MF_STRING, IDM_CHORDS, ShowChords);
+				ModifyMenuW(hMenu, IDM_CHORDS, MF_BYCOMMAND | MF_STRING, IDM_CHORDS, ShowChords);
 				DrawMenuBar(hwnd);
 				for (x = 0; x < 9; x++)
 					DestroyWindow(hwndChords[x]);
@@ -969,7 +971,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (showtest == FALSE)
 			{
 				showtest = TRUE;
-				ModifyMenu(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, StopNotes);
+				ModifyMenuW(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, StopNotes);
 				DrawMenuBar(hwnd);
 				testRect.left = top260min30 + 325;
 				testRect.right = testRect.left + (2 * StaffWidth[0]);
@@ -982,9 +984,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			else//if (showtest)
 			{
-				SendMessage(hwnd, WM_COMMAND, IDM_ACCIDENTAL + saveAccidental, 0);
+				SendMessageW(hwnd, WM_COMMAND, IDM_ACCIDENTAL + saveAccidental, 0);
 				showtest = FALSE;
-				ModifyMenu(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, PlayNote);
+				ModifyMenuW(hMenu, IDM_TEST, MF_BYCOMMAND | MF_STRING, IDM_TEST, PlayNote);
 				DrawMenuBar(hwnd);
 				hdc = GetDC(hwnd);
 				FillRect(hdc, &rect, hWhiteBrush);
@@ -995,7 +997,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 
 		else if (LOWORD(wParam) == IDM_ABOUT)
-			MessageBox(hwnd, About, szAppName, MB_OK);
+			MessageBoxW(hwnd, About, szAppName, MB_OK);
 
 		else if (HIWORD(wParam) == BN_CLICKED)
 		{
@@ -1007,7 +1009,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					{
 						if (showscale)
 						{
-							SendMessage(hwndShowScale, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendMessageW(hwndShowScale, BM_SETCHECK, BST_UNCHECKED, 0);
 							SavedNote = Scale[KeyName];
 							ScanCode = Codes[SavedNote - 36];//36 is the lowest MIDI note number in this program
 							EndNote();
@@ -1017,7 +1019,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 						{
 							showscale = TRUE;
 							EndNote();
-							SendMessage(hwndShowScale, BM_SETCHECK, BST_CHECKED, 0);
+							SendMessageW(hwndShowScale, BM_SETCHECK, BST_CHECKED, 0);
 							SavedNote = Scale[KeyName];
 							ScanCode = Codes[SavedNote - 36];//36 is the lowest MIDI note number in this program
 							StartNote();
@@ -1026,9 +1028,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 					else if (lParam == (LONG_PTR)hwndKeys[x])
 					{
-						SendMessage(hwndKeys[KeyName], BM_SETCHECK, BST_UNCHECKED, 0);
+						SendMessageW(hwndKeys[KeyName], BM_SETCHECK, BST_UNCHECKED, 0);
 						KeyName = x;
-						SendMessage(hwndKeys[KeyName], BM_SETCHECK, BST_CHECKED, 0);
+						SendMessageW(hwndKeys[KeyName], BM_SETCHECK, BST_CHECKED, 0);
 						if ((KeyName >= 7) && (KeyName <= 11))
 						{
 							CheckMenuItem(hMenu, IDM_ACCIDENTAL + accidental, MF_UNCHECKED);
@@ -1036,7 +1038,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 							CheckMenuItem(hMenu, IDM_ACCIDENTAL + accidental, MF_CHECKED);
 							*(WORD*)&Keys[6][0] = 'bG';
 							DestroyWindow(hwndKeys[6]);
-							hwndKeys[6] = CreateWindow(L"BUTTON", Keys[6],
+							hwndKeys[6] = CreateWindowW(L"BUTTON", Keys[6],
 								WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON | WS_DLGFRAME,
 								xKeyLoc[6], yKeyLoc[6], 50, 30,
 								hwnd, NULL, hInst, NULL);
@@ -1048,7 +1050,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 							CheckMenuItem(hMenu, IDM_ACCIDENTAL + accidental, MF_CHECKED);
 							*(WORD*)&Keys[6][0] = '#F';
 							DestroyWindow(hwndKeys[6]);
-							hwndKeys[6] = CreateWindow(L"BUTTON", Keys[6],
+							hwndKeys[6] = CreateWindowW(L"BUTTON", Keys[6],
 								WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON | WS_DLGFRAME,
 								xKeyLoc[6], yKeyLoc[6], 50, 30,
 								hwnd, NULL, hInst, NULL);
@@ -1057,11 +1059,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 						UpdateWindow(hwnd);
 						if (showscale)
 						{
-							SendMessage(hwndShowScale, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendMessageW(hwndShowScale, BM_SETCHECK, BST_UNCHECKED, 0);
 							SavedNote = Scale[KeyName];
 							ScanCode = Codes[SavedNote - 36];//36 is the lowest MIDI note number in this program
 							EndNote();
-							SendMessage(hwndShowScale, BM_SETCHECK, BST_CHECKED, 0);
+							SendMessageW(hwndShowScale, BM_SETCHECK, BST_CHECKED, 0);
 							SavedNote = Scale[KeyName];
 							ScanCode = Codes[SavedNote - 36];//36 is the lowest MIDI note number in this program
 							StartNote();
@@ -1076,9 +1078,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					if (lParam == (LONG_PTR)hwndChords[x])
 					{
-						SendMessage(hwndChords[ChordType], BM_SETCHECK, BST_UNCHECKED, 0);
+						SendMessageW(hwndChords[ChordType], BM_SETCHECK, BST_UNCHECKED, 0);
 						ChordType = x;
-						SendMessage(hwndChords[ChordType], BM_SETCHECK, BST_CHECKED, 0);
+						SendMessageW(hwndChords[ChordType], BM_SETCHECK, BST_CHECKED, 0);
 						break;
 					}
 				}
@@ -1086,9 +1088,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					if (lParam == (LONG_PTR)hwndInversions[x])
 					{
-						SendMessage(hwndInversions[Inversion], BM_SETCHECK, BST_UNCHECKED, 0);
+						SendMessageW(hwndInversions[Inversion], BM_SETCHECK, BST_UNCHECKED, 0);
 						Inversion = x;
-						SendMessage(hwndInversions[Inversion], BM_SETCHECK, BST_CHECKED, 0);
+						SendMessageW(hwndInversions[Inversion], BM_SETCHECK, BST_CHECKED, 0);
 						break;
 					}
 				}
@@ -1218,7 +1220,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 						if ((xPos < (saveleft - WhiteKeyWidth / 3)) || (xPos > (saveleft + (WhiteKeyWidth / 3))))
 						{
 							EndNote();
-							SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+							SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 						}
 					}
 					else if (yKey[ScanCode] == 3)//on a white key with black keys on the left and right
@@ -1228,13 +1230,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 							if ((xPos < saveleft) || (xPos > (saveleft + WhiteKeyWidth)))
 							{
 								EndNote();
-								SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+								SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 							}
 						}
 						else if ((xPos < (saveleft + WhiteKeyWidth / 3)) || (xPos > (saveleft + (WhiteKeyWidth * 2 / 3))))
 						{
 							EndNote();
-							SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+							SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 						}
 					}
 					else if (yKey[ScanCode] == 1)//on a white key with a black key on the left
@@ -1244,13 +1246,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 							if ((xPos < saveleft) || (xPos > (saveleft + WhiteKeyWidth)))
 							{
 								EndNote();
-								SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+								SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 							}
 						}
 						else if ((xPos < (saveleft + WhiteKeyWidth / 3)) || (xPos > (saveleft + WhiteKeyWidth)))
 						{
 							EndNote();
-							SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+							SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 						}
 					}
 					else if (yKey[ScanCode] == 2)//on a white key with a black key on the right
@@ -1260,13 +1262,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 							if ((xPos < saveleft) || (xPos > (saveleft + WhiteKeyWidth)))
 							{
 								EndNote();
-								SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+								SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 							}
 						}
 						else if ((xPos < saveleft) || (xPos > (saveleft + (WhiteKeyWidth * 2 / 3))))
 						{
 							EndNote();
-							SendMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+							SendMessageW(hwnd, WM_LBUTTONDOWN, 0, lParam);
 						}
 					}
 					else
@@ -1308,10 +1310,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			first = FALSE;
 			hOldFont = SelectObject(hdc, hMaestroFont);
-			GetCharWidth32(hdc, 61, 61, StaffWidth);//61 is '='
-			GetCharWidth32(hdc, 119, 119, NoteWidth);//119 is 'w'
-			GetCharWidth32(hdc, 38, 38, GClefWidth);//38 is '&'
-			GetCharWidth32(hdc, 63, 63, FClefWidth);//63 is '?'
+			GetCharWidth32W(hdc, 61, 61, StaffWidth);//61 is '='
+			GetCharWidth32W(hdc, 119, 119, NoteWidth);//119 is 'w'
+			GetCharWidth32W(hdc, 38, 38, GClefWidth);//38 is '&'
+			GetCharWidth32W(hdc, 63, 63, FClefWidth);//63 is '?'
 			NumOfStaffs = rect.right / StaffWidth[0];
 			if (NumOfStaffs > 128)
 				NumOfStaffs = 128;
@@ -1321,26 +1323,26 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SelectObject(hdc, hSmallFont);
 			for (x = 0; x < 22; x++)
 			{
-				GetCharWidth32(hdc, ComputerKeys1[x], ComputerKeys1[x], &Widths1[x]);
-				GetCharWidth32(hdc, ComputerKeys2[x], ComputerKeys2[x], &Widths2[x]);
+				GetCharWidth32W(hdc, ComputerKeys1[x], ComputerKeys1[x], &Widths1[x]);
+				GetCharWidth32W(hdc, ComputerKeys2[x], ComputerKeys2[x], &Widths2[x]);
 			}
 			SelectObject(hdc, hFont);
 			for (x = 0; x < 7; x++)
-				GetCharWidth32(hdc, CDEFGAB[x], CDEFGAB[x], &Widths[x]);
+				GetCharWidth32W(hdc, CDEFGAB[x], CDEFGAB[x], &Widths[x]);
 
 			hdcMem = CreateCompatibleDC(hdc);
 			hMemBitmap = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
 			SelectObject(hdcMem, hMemBitmap);
 		}
 		SelectObject(hdc, hMaestroFont);
-		TextOut(hdc, ExtraSpace, top - 212, Staff, NumOfStaffs);
-		TextOut(hdc, ExtraSpace, top - 121, Staff, NumOfStaffs);
+		TextOutW(hdc, ExtraSpace, top - 212, Staff, NumOfStaffs);
+		TextOutW(hdc, ExtraSpace, top - 121, Staff, NumOfStaffs);
 		SetBkMode(hdc, TRANSPARENT);
-		TextOut(hdc, ExtraSpace, top - 224, L"&", 1); // treble clef
-		TextOut(hdc, ExtraSpace - 1, top - 212, L"\\", 1);
-		TextOut(hdc, ExtraSpace, top - 158, L"?", 1); // bass clef
-		TextOut(hdc, ExtraSpace - 1, top - 121, L"\\", 1);
-		TextOut(hdc, ExtraSpace - 1, top - 169, L"\\", 1);
+		TextOutW(hdc, ExtraSpace, top - 224, L"&", 1); // treble clef
+		TextOutW(hdc, ExtraSpace - 1, top - 212, L"\\", 1);
+		TextOutW(hdc, ExtraSpace, top - 158, L"?", 1); // bass clef
+		TextOutW(hdc, ExtraSpace - 1, top - 121, L"\\", 1);
+		TextOutW(hdc, ExtraSpace - 1, top - 169, L"\\", 1);
 		//wchar_t Keys[12][3] = {"C ","F ","Bb","Eb","Ab","Db","Gb","B ","E ","A ","D ","G "};
 		//wchar_t Keys[12][3] = {"C ","G ","D ","A ","E ","B ","Gb","Db","Ab","Eb","Bb","F "};
 		if ((showkeys) && (KeyName))
@@ -1348,108 +1350,108 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			switch (KeyName)
 			{
 			case 5:
-				TextOut(hdc, ExtraSpace + 100, top - 230, L"#", 1);
-				TextOut(hdc, ExtraSpace + 100, top - 127, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 100, top - 230, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 100, top - 127, L"#", 1);
 			case 4:
-				TextOut(hdc, ExtraSpace + 85, top - 248, L"#", 1);
-				TextOut(hdc, ExtraSpace + 85, top - 145, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 85, top - 248, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 85, top - 145, L"#", 1);
 			case 3:
-				TextOut(hdc, ExtraSpace + 70, top - 266, L"#", 1);
-				TextOut(hdc, ExtraSpace + 70, top - 163, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 70, top - 266, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 70, top - 163, L"#", 1);
 			case 2:
-				TextOut(hdc, ExtraSpace + 55, top - 242, L"#", 1);
-				TextOut(hdc, ExtraSpace + 55, top - 139, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 55, top - 242, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 55, top - 139, L"#", 1);
 			case 1:
-				TextOut(hdc, ExtraSpace + 40, top - 260, L"#", 1);
-				TextOut(hdc, ExtraSpace + 40, top - 157, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 40, top - 260, L"#", 1);
+				TextOutW(hdc, ExtraSpace + 40, top - 157, L"#", 1);
 				break;
 			case 6:
 				if (accidental == 2)
 				{
-					TextOut(hdc, ExtraSpace + 115, top - 242, L"b", 1);
-					TextOut(hdc, ExtraSpace + 115, top - 139, L"b", 1);
+					TextOutW(hdc, ExtraSpace + 115, top - 242, L"b", 1);
+					TextOutW(hdc, ExtraSpace + 115, top - 139, L"b", 1);
 				}
 				else//if (accidental == 1)
 				{
-					TextOut(hdc, ExtraSpace + 115, top - 254, L"#", 1);
-					TextOut(hdc, ExtraSpace + 115, top - 151, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 115, top - 254, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 115, top - 151, L"#", 1);
 
-					TextOut(hdc, ExtraSpace + 100, top - 230, L"#", 1);
-					TextOut(hdc, ExtraSpace + 100, top - 127, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 100, top - 230, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 100, top - 127, L"#", 1);
 
-					TextOut(hdc, ExtraSpace + 85, top - 248, L"#", 1);
-					TextOut(hdc, ExtraSpace + 85, top - 145, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 85, top - 248, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 85, top - 145, L"#", 1);
 
-					TextOut(hdc, ExtraSpace + 70, top - 266, L"#", 1);
-					TextOut(hdc, ExtraSpace + 70, top - 163, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 70, top - 266, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 70, top - 163, L"#", 1);
 
-					TextOut(hdc, ExtraSpace + 55, top - 242, L"#", 1);
-					TextOut(hdc, ExtraSpace + 55, top - 139, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 55, top - 242, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 55, top - 139, L"#", 1);
 
-					TextOut(hdc, ExtraSpace + 40, top - 260, L"#", 1);
-					TextOut(hdc, ExtraSpace + 40, top - 157, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 40, top - 260, L"#", 1);
+					TextOutW(hdc, ExtraSpace + 40, top - 157, L"#", 1);
 					break;
 				}
 			case 7:
-				TextOut(hdc, ExtraSpace + 100, top - 224, L"b", 1);
-				TextOut(hdc, ExtraSpace + 100, top - 121, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 100, top - 224, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 100, top - 121, L"b", 1);
 			case 8:
-				TextOut(hdc, ExtraSpace + 85, top - 248, L"b", 1);
-				TextOut(hdc, ExtraSpace + 85, top - 145, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 85, top - 248, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 85, top - 145, L"b", 1);
 			case 9:
-				TextOut(hdc, ExtraSpace + 70, top - 230, L"b", 1);
-				TextOut(hdc, ExtraSpace + 70, top - 127, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 70, top - 230, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 70, top - 127, L"b", 1);
 			case 10:
-				TextOut(hdc, ExtraSpace + 55, top - 254, L"b", 1);
-				TextOut(hdc, ExtraSpace + 55, top - 151, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 55, top - 254, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 55, top - 151, L"b", 1);
 			case 11:
-				TextOut(hdc, ExtraSpace + 40, top - 236, L"b", 1);
-				TextOut(hdc, ExtraSpace + 40, top - 133, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 40, top - 236, L"b", 1);
+				TextOutW(hdc, ExtraSpace + 40, top - 133, L"b", 1);
 			}
 		}
 		//		SetTextColor(hdc, 0xD0D0D0);
 		//		SelectObject(hdc, hFont);
 		//		if (showkeys == FALSE)
 		//			for (x = 0; x < 35; x++)
-		//				TextOut(hdc, (x*WhiteKeyWidth) + ExtraSpace + (WhiteKeyWidth-Widths[x%7])/2, top-139, &CDEFGAB[x % 7], 1);
+		//				TextOutW(hdc, (x*WhiteKeyWidth) + ExtraSpace + (WhiteKeyWidth-Widths[x%7])/2, top-139, &CDEFGAB[x % 7], 1);
 		SelectObject(hdc, hSmallFont);
 		if (showkeys == FALSE)
 		{
 			SetTextColor(hdc, 0x6060D0);
-			TextOut(hdc, 50, top - 200, L"F", 1);
-			TextOut(hdc, 50, top - 188, L"D", 1);
-			TextOut(hdc, 50, top - 176, L"B", 1);
-			TextOut(hdc, 50, top - 164, L"G", 1);
-			TextOut(hdc, 50, top - 152, L"E", 1);
+			TextOutW(hdc, 50, top - 200, L"F", 1);
+			TextOutW(hdc, 50, top - 188, L"D", 1);
+			TextOutW(hdc, 50, top - 176, L"B", 1);
+			TextOutW(hdc, 50, top - 164, L"G", 1);
+			TextOutW(hdc, 50, top - 152, L"E", 1);
 
-			TextOut(hdc, 65, top - 205, L"G", 1);
-			TextOut(hdc, 65, top - 193, L"E", 1);
-			TextOut(hdc, 65, top - 181, L"C", 1);
-			TextOut(hdc, 65, top - 169, L"A", 1);
-			TextOut(hdc, 65, top - 157, L"F", 1);
-			TextOut(hdc, 65, top - 145, L"D", 1);
+			TextOutW(hdc, 65, top - 205, L"G", 1);
+			TextOutW(hdc, 65, top - 193, L"E", 1);
+			TextOutW(hdc, 65, top - 181, L"C", 1);
+			TextOutW(hdc, 65, top - 169, L"A", 1);
+			TextOutW(hdc, 65, top - 157, L"F", 1);
+			TextOutW(hdc, 65, top - 145, L"D", 1);
 
-			TextOut(hdc, 50, top - 109, L"A", 1);
-			TextOut(hdc, 50, top - 97, L"F", 1);
-			TextOut(hdc, 50, top - 85, L"D", 1);
-			TextOut(hdc, 50, top - 73, L"B", 1);
-			TextOut(hdc, 50, top - 61, L"G", 1);
+			TextOutW(hdc, 50, top - 109, L"A", 1);
+			TextOutW(hdc, 50, top - 97, L"F", 1);
+			TextOutW(hdc, 50, top - 85, L"D", 1);
+			TextOutW(hdc, 50, top - 73, L"B", 1);
+			TextOutW(hdc, 50, top - 61, L"G", 1);
 
-			TextOut(hdc, 65, top - 114, L"B", 1);
-			TextOut(hdc, 65, top - 102, L"G", 1);
-			TextOut(hdc, 65, top - 90, L"E", 1);
-			TextOut(hdc, 65, top - 78, L"C", 1);
-			TextOut(hdc, 65, top - 66, L"A", 1);
-			TextOut(hdc, 65, top - 54, L"F", 1);
+			TextOutW(hdc, 65, top - 114, L"B", 1);
+			TextOutW(hdc, 65, top - 102, L"G", 1);
+			TextOutW(hdc, 65, top - 90, L"E", 1);
+			TextOutW(hdc, 65, top - 78, L"C", 1);
+			TextOutW(hdc, 65, top - 66, L"A", 1);
+			TextOutW(hdc, 65, top - 54, L"F", 1);
 
-			TextOut(hdc, 50, top - 130, L"C", 1);
+			TextOutW(hdc, 50, top - 130, L"C", 1);
 		}
 		SetTextColor(hdc, 0x6060D0);
 		for (x = ExtraSpace + (4 * WhiteKeyWidth), z = 0; z < 10; x += WhiteKeyWidth, z++)
-			TextOut(hdc, x + ((WhiteKeyWidth - Widths1[z]) / 2), top + 155, &ComputerKeys1[z], 1);
+			TextOutW(hdc, x + ((WhiteKeyWidth - Widths1[z]) / 2), top + 155, &ComputerKeys1[z], 1);
 		SetTextColor(hdc, 0xFF0000);//blue
 		for (; z < 22; x += WhiteKeyWidth, z++)
-			TextOut(hdc, x + ((WhiteKeyWidth - Widths1[z]) / 2), top + 155, &ComputerKeys1[z], 1);
+			TextOutW(hdc, x + ((WhiteKeyWidth - Widths1[z]) / 2), top + 155, &ComputerKeys1[z], 1);
 		SetBkMode(hdc, OPAQUE);
 
 		for (x = (4 * WhiteKeyWidth) + ExtraSpace - (WhiteKeyWidth / 2), z = 0; z < 10; x += WhiteKeyWidth, z++)
@@ -1458,7 +1460,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetTextColor(hdc, 0xD0D0D0);
 			else
 				SetTextColor(hdc, 0x6060D0);//reddish
-			TextOut(hdc, x + ((WhiteKeyWidth - Widths2[z]) / 2), top - 22, &ComputerKeys2[z], 1);
+			TextOutW(hdc, x + ((WhiteKeyWidth - Widths2[z]) / 2), top - 22, &ComputerKeys2[z], 1);
 		}
 		SetTextColor(hdc, 0x6060D0);
 		for (; z < 22; x += WhiteKeyWidth, z++)
@@ -1467,7 +1469,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetTextColor(hdc, 0xD0D0D0);
 			else
 				SetTextColor(hdc, 0xFF0000);//blue
-			TextOut(hdc, x + ((WhiteKeyWidth - Widths2[z]) / 2), top - 22, &ComputerKeys2[z], 1);
+			TextOutW(hdc, x + ((WhiteKeyWidth - Widths2[z]) / 2), top - 22, &ComputerKeys2[z], 1);
 		}
 
 		hOldPen = SelectObject(hdc, hPen);
@@ -1495,7 +1497,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SetTextColor(hdc, 0xE4E4E4);
 			SelectObject(hdc, hFont);
 			for (x = 0; x < 35; x++)
-				TextOut(hdc, (x * WhiteKeyWidth) + ExtraSpace + (WhiteKeyWidth - Widths[x % 7]) / 2, top + 110, &CDEFGAB[x % 7], 1);
+				TextOutW(hdc, (x * WhiteKeyWidth) + ExtraSpace + (WhiteKeyWidth - Widths[x % 7]) / 2, top + 110, &CDEFGAB[x % 7], 1);
 		}
 		SelectObject(hdc, hOldPen);
 		SelectObject(hdc, hOldBrush);
@@ -1506,7 +1508,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return 0;
 
 	case WM_DESTROY:
-		RemoveFontResource(L"MAESTRO_.TTF");
+		RemoveFontResourceW(L"MAESTRO_.TTF");
 		if (midi_in)
 		{
 			midiInStop(hMidiIn);
@@ -1530,7 +1532,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 		return 0;
 	}
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
 //SUBROUTINES////////////////////////////////////////////////////////////
@@ -1541,7 +1543,7 @@ void DrawKey(void)
 	//	{
 	//		wchar_t asdf[10];
 	//		_itoa(Note, asdf, 10);
-	//		TextOut(hdc, 0, 0, asdf, lstrlen(asdf));
+	//		TextOutW(hdc, 0, 0, asdf, lstrlen(asdf));
 	//	}
 	hOldPen = SelectObject(hdc, hPen);
 	hOldFont = SelectObject(hdc, hMaestroFont);
@@ -1565,15 +1567,15 @@ void DrawKey(void)
 			SelectObject(hdc, hFont);
 			SetBkMode(hdc, TRANSPARENT);
 			if (accidental == 2) // flat
-				TextOut(hdc, left - 20 + (WhiteKeyWidth - Widths[xKey[ScanCode] % 7]) / 2, top - 139, &CDEFGAB[xKey[ScanCode] % 7], 1);
+				TextOutW(hdc, left - 20 + (WhiteKeyWidth - Widths[xKey[ScanCode] % 7]) / 2, top - 139, &CDEFGAB[xKey[ScanCode] % 7], 1);
 			else//if (accidental == 1)
 				if (ScanCode != 3) // not middle C
-					TextOut(hdc, left - (WhiteKeyWidth + Widths[(xKey[ScanCode] - 1) % 7]) / 2, top - 139, &CDEFGAB[(xKey[ScanCode] - 1) % 7], 1);
+					TextOutW(hdc, left - (WhiteKeyWidth + Widths[(xKey[ScanCode] - 1) % 7]) / 2, top - 139, &CDEFGAB[(xKey[ScanCode] - 1) % 7], 1);
 			SelectObject(hdc, hMaestroFont);
 			if (accidental == 1)
-				TextOut(hdc, left - (WhiteKeyWidth / 3) - 26, yStaff[Note - 36], L"#w", 2);
+				TextOutW(hdc, left - (WhiteKeyWidth / 3) - 26, yStaff[Note - 36], L"#w", 2);
 			else
-				TextOut(hdc, left - (WhiteKeyWidth / 3) + 5, yStaff[Note - 35], L"bw", 2);
+				TextOutW(hdc, left - (WhiteKeyWidth / 3) + 5, yStaff[Note - 35], L"bw", 2);
 			SetBkMode(hdc, OPAQUE);
 			SelectObject(hdc, hBlueBrush);
 		}
@@ -1664,7 +1666,7 @@ void DrawKey(void)
 			SelectObject(hdc, hFont);
 			SetBkMode(hdc, TRANSPARENT);
 			if (ScanCode != 16) // not middle C
-				TextOut(hdc, left + (WhiteKeyWidth - Widths[xKey[ScanCode] % 7]) / 2, top - 139, &CDEFGAB[xKey[ScanCode] % 7], 1);
+				TextOutW(hdc, left + (WhiteKeyWidth - Widths[xKey[ScanCode] % 7]) / 2, top - 139, &CDEFGAB[xKey[ScanCode] % 7], 1);
 			SetBkMode(hdc, OPAQUE);
 
 			SetTextColor(hdc, 0);
@@ -1672,7 +1674,7 @@ void DrawKey(void)
 			SetBkMode(hdc, TRANSPARENT);
 			SetTextColor(hdc, 0xFF0000);
 			//			if (ScanCode != 16) // not middle C
-			TextOut(hdc, left + (WhiteKeyWidth - Widths[xKey[ScanCode] % 7]) / 2, yStaff[Note - 36], L"w", 1);
+			TextOutW(hdc, left + (WhiteKeyWidth - Widths[xKey[ScanCode] % 7]) / 2, yStaff[Note - 36], L"w", 1);
 			//			SelectObject(hdc,hMaestroFont);
 			SetTextColor(hdc, 0);
 			switch (xKey[ScanCode])
@@ -1723,7 +1725,7 @@ void DrawKey(void)
 			SetTextColor(hdc, 0xE4E4E4);
 			SelectObject(hdc, hFont);
 			x = xKey[ScanCode];
-			TextOut(hdc, (x * WhiteKeyWidth) + ExtraSpace + (WhiteKeyWidth - Widths[x % 7]) / 2, top + 110, &CDEFGAB[x % 7], 1);
+			TextOutW(hdc, (x * WhiteKeyWidth) + ExtraSpace + (WhiteKeyWidth - Widths[x % 7]) / 2, top + 110, &CDEFGAB[x % 7], 1);
 		}
 		if (PreviousNote != (Note - 1))
 			SelectObject(hdc, hBlackBrush);
@@ -1753,7 +1755,7 @@ void DrawKey(void)
 	ReleaseDC(hwnd, hdc);
 }
 
-void StartShowAndPlay(void)
+static void StartShowAndPlay(void)
 {
 	midiOutShortMsg(hMidiOut, 0x90 | (Velocity << 16) | (Note << 8));
 	fromkeydown = TRUE;
@@ -1803,7 +1805,7 @@ void StartNote(void)
 	}
 
 	//	if ((showtest) && (SavedNote == 95))
-	//		SendMessage(hwnd, WM_COMMAND, IDM_TEST, 0);
+	//		SendMessageW(hwnd, WM_COMMAND, IDM_TEST, 0);
 	Note = SavedNote;
 	StartShowAndPlay();
 	if (ChordType == 1)//Major Triad
@@ -1992,7 +1994,7 @@ void StartNote(void)
 	}
 }
 
-void EndShowAndPlay(void)
+static void EndShowAndPlay(void)
 {
 	midiOutShortMsg(hMidiOut, 0x90 | (Note << 8));//0 Velocity
 	fromkeydown = FALSE;
@@ -2237,7 +2239,7 @@ void EndNote(void)
 void CALLBACK MidiInProc(HMIDIIN hMidiIn, WORD wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
 {//from midiInOpen (if a MIDI keyboard is attached)
 	if (wMsg == MIM_DATA)
-		PostMessage(hwnd, WM_USER, (WPARAM)dwParam1 & 0xFF, (LPARAM)(dwParam1 >> 8) & 0xFFFF);//dwParam1 contains velocity, note, and status bytes
+		PostMessageW(hwnd, WM_USER, (WPARAM)dwParam1 & 0xFF, (LPARAM)(dwParam1 >> 8) & 0xFFFF);//dwParam1 contains velocity, note, and status bytes
 }
 
 int Atoi(wchar_t* ptr)
@@ -2254,7 +2256,7 @@ int Atoi(wchar_t* ptr)
 
 void WriteIni(void)
 {
-	hFile = CreateFile(SimplePianoIni, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	hFile = CreateFileW(SimplePianoIni, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
 	if (iInDevice != 0)
 	{
 		WriteFile(hFile, InDev, 13, &dwBytesWritten, NULL);
@@ -2294,33 +2296,33 @@ void NoteTest(void)
 
 	FillRect(hdc, &testRect, hWhiteBrush);
 	SetBkMode(hdc, TRANSPARENT);
-	TextOut(hdc, top260min30 + 325, top - 462, L"==", 2);
-	TextOut(hdc, top260min30 + 325, top - 371, L"==", 2);
-	TextOut(hdc, top260min30 + 325, top - 462 - 12, L"&", 1);
-	TextOut(hdc, top260min30 + 325, top - 371 - 37, L"?", 1);
+	TextOutW(hdc, top260min30 + 325, top - 462, L"==", 2);
+	TextOutW(hdc, top260min30 + 325, top - 371, L"==", 2);
+	TextOutW(hdc, top260min30 + 325, top - 462 - 12, L"&", 1);
+	TextOutW(hdc, top260min30 + 325, top - 371 - 37, L"?", 1);
 	if (RandomNote <= 40)
-		TextOut(hdc, top260min30 + 325 + StaffWidth[0], top - 371 + 12, L"__", 2);
+		TextOutW(hdc, top260min30 + 325 + StaffWidth[0], top - 371 + 12, L"__", 2);
 	if ((RandomNote == 36) || (RandomNote == 37))
-		TextOut(hdc, top260min30 + 325 + StaffWidth[0], top - 371 + 24, L"__", 2);
+		TextOutW(hdc, top260min30 + 325 + StaffWidth[0], top - 371 + 24, L"__", 2);
 	if ((RandomNote == 60) || (RandomNote == 61))
-		TextOut(hdc, top260min30 + 325 + StaffWidth[0], top - 462 + 21, L"__", 2);
+		TextOutW(hdc, top260min30 + 325 + StaffWidth[0], top - 462 + 21, L"__", 2);
 	if (RandomNote >= 80)
-		TextOut(hdc, top260min30 + 325 + StaffWidth[0], top - 462 - 59, L"__", 2);
+		TextOutW(hdc, top260min30 + 325 + StaffWidth[0], top - 462 - 59, L"__", 2);
 	if (RandomNote == 84)
-		TextOut(hdc, top260min30 + 325 + StaffWidth[0], top - 462 - 71, L"__", 2);
+		TextOutW(hdc, top260min30 + 325 + StaffWidth[0], top - 462 - 71, L"__", 2);
 
 	for (x = 0; x < 25; x++)
 	{
 		if (RandomNote == BlackKeyNotes[x])
 		{
 			if (accidental == 1)
-				TextOut(hdc, top260min30 + 325 + (StaffWidth[0] + (NoteWidth[0] / 2)), RandomNoteLoc, L"#w", 2);
+				TextOutW(hdc, top260min30 + 325 + (StaffWidth[0] + (NoteWidth[0] / 2)), RandomNoteLoc, L"#w", 2);
 			else
-				TextOut(hdc, top260min30 + 325 + (StaffWidth[0] + (NoteWidth[0] / 2)), RandomNoteLoc - 6, L"bw", 2);
+				TextOutW(hdc, top260min30 + 325 + (StaffWidth[0] + (NoteWidth[0] / 2)), RandomNoteLoc - 6, L"bw", 2);
 			break;
 		}
 	}
 	if (x == 25)//not a # or b
-		TextOut(hdc, top260min30 + 325 + (StaffWidth[0] + (NoteWidth[0] / 2)), RandomNoteLoc, L"w", 1);
+		TextOutW(hdc, top260min30 + 325 + (StaffWidth[0] + (NoteWidth[0] / 2)), RandomNoteLoc, L"w", 1);
 	SetBkMode(hdc, OPAQUE);
 }
